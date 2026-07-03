@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+  <meta charset="UTF-8">
+  <title>Ürün Fiyat Takipçisi</title>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary-color: #4f46e5;
+      --primary-hover: #4338ca;
+      --danger-color: #ef4444;
+      --danger-hover: #dc2626;
+      --secondary-color: #6b7280;
+      --secondary-hover: #4b5563;
+      --success-color: #10b981;
+      --bg-color: #f3f4f6;
+      --card-bg: #ffffff;
+      --text-main: #1f2937;
+      --text-muted: #6b7280;
+      --border-color: #e5e7eb;
+    }
+
+    body { 
+      font-family: 'Inter', sans-serif; 
+      background-color: var(--bg-color);
+      color: var(--text-main);
+      max-width: 800px; 
+      margin: 40px auto; 
+      padding: 0 20px;
+      line-height: 1.5;
+    }
+
+    h1 {
+      text-align: center;
+      color: var(--primary-color);
+      margin-bottom: 30px;
+    }
+
+    /* Kart Tasarımı */
+    .card {
+      background-color: var(--card-bg);
+      padding: 24px;
+      border-radius: 12px;
+      box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+      margin-bottom: 24px;
+    }
+
+    /* Form Elemanları */
+    form { 
+      display: flex; 
+      gap: 12px; 
+      flex-wrap: wrap;
+    }
+
+    input { 
+      padding: 10px 14px; 
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+      font-family: inherit;
+      font-size: 14px;
+      flex: 1;
+      min-width: 150px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+      outline: none;
+    }
+
+    input:focus {
+      border-color: var(--primary-color);
+      box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.15);
+    }
+
+    /* Butonlar */
+    button { 
+      padding: 10px 18px; 
+      border: none;
+      border-radius: 8px;
+      font-weight: 500;
+      font-family: inherit;
+      cursor: pointer; 
+      transition: all 0.2s ease;
+      color: white;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+    }
+
+    button:disabled {
+      opacity: 0.7;
+      cursor: not-allowed;
+    }
+
+    .btn-primary { background-color: var(--primary-color); }
+    .btn-primary:hover:not(:disabled) { background-color: var(--primary-hover); }
+
+    .btn-danger { background-color: var(--danger-color); }
+    .btn-danger:hover:not(:disabled) { background-color: var(--danger-hover); }
+
+    .btn-secondary { background-color: var(--secondary-color); }
+    .btn-secondary:hover:not(:disabled) { background-color: var(--secondary-hover); }
+    
+    .btn-sm {
+      padding: 6px 12px;
+      font-size: 13px;
+    }
+
+    /* Tablo Tasarımı */
+    .table-container { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; }
+    th, td { padding: 14px 16px; text-align: left; border-bottom: 1px solid var(--border-color); }
+    
+    th {
+      background-color: #f9fafb;
+      font-weight: 600;
+      color: var(--text-muted);
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+    }
+
+    tbody tr:hover { background-color: #f9fafb; }
+    .actions { display: flex; gap: 8px; }
+
+    /* Geçmiş Bölümü */
+    #history-container { margin-top: 20px; }
+    #history h3 { margin-top: 0; color: var(--text-main); }
+    #history p { color: var(--text-muted); font-size: 14px; margin-bottom: 16px; }
+    
+    .history-list { list-style-type: none; padding: 0; margin: 0 0 20px 0; }
+    .history-list li {
+      padding: 10px;
+      background-color: var(--bg-color);
+      margin-bottom: 8px;
+      border-radius: 6px;
+      display: flex;
+      justify-content: space-between;
+      font-size: 14px;
+    }
+    .price-tag { font-weight: 600; color: var(--primary-color); }
+
+    /* Toast Bildirimleri */
+    #toast-container {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      z-index: 9999;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .toast {
+      padding: 12px 20px;
+      border-radius: 8px;
+      color: white;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      opacity: 0;
+      transform: translateY(20px);
+      transition: all 0.3s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    }
+
+    .toast.show { opacity: 1; transform: translateY(0); }
+    .toast.success { background-color: var(--success-color); }
+    .toast.error { background-color: var(--danger-color); }
+
+    /* Yükleniyor Spinner */
+    .spinner {
+      width: 16px;
+      height: 16px;
+      border: 2px solid rgba(255,255,255,0.3);
+      border-radius: 50%;
+      border-top-color: white;
+      animation: spin 0.8s linear infinite;
+      display: none;
+    }
+    button.loading .spinner { display: inline-block; }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+    
+    .fade-in { animation: fadeIn 0.3s ease-in-out; }
+  </style>
+</head>
+<body>
+  <h1>Ürün Fiyat Takipçisi</h1>
+
+  <div class="card">
+    <form id="add-product-form">
+      <input type="text" id="name" placeholder="Ürün adı (Örn: Kulaklık)" required>
+      <input type="number" id="current_price" placeholder="Fiyat (₺)" step="0.01" required>
+      <button type="submit" class="btn-primary" id="btn-add-product">
+        <span class="spinner"></span> Ürün Ekle
+      </button>
+    </form>
+  </div>
+
+  <div class="card table-container">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>İsim</th>
+          <th>Güncel Fiyat</th>
+          <th>Oluşturulma</th>
+          <th>İşlemler</th>
+        </tr>
+      </thead>
+      <tbody id="product-list">
+        <tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Ürünler yükleniyor...</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div id="history-container"></div>
+  <div id="toast-container"></div>
+
+  <script>
+    const API = ""; // Kendi API adresini buraya eklemelisin!
+
+    // Toast Bildirim Fonksiyonu
+    function showToast(message, type = 'success') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      
+      // Animasyon için kısa gecikme
+      setTimeout(() => toast.classList.add('show'), 10);
+      
+      // 3 saniye sonra kaldır
+      setTimeout(() => {
+        toast.classList.remove('show');
+        setTimeout(() => toast.remove(), 300);
+      }, 3000);
+    }
+
+    // Yükleme Durumu Yönetimi
+    function setLoading(buttonElement, isLoading) {
+      if (isLoading) {
+        buttonElement.classList.add('loading');
+        buttonElement.disabled = true;
+      } else {
+        buttonElement.classList.remove('loading');
+        buttonElement.disabled = false;
+      }
+    }
+
+    async function loadProducts() {
+      const tbody = document.getElementById("product-list");
+      try {
+        const res = await fetch(`${API}/products`);
+        if (!res.ok) throw new Error('Ürünler yüklenemedi');
+        const products = await res.json();
+        
+        tbody.innerHTML = "";
+        
+        if (products.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--text-muted);">Henüz eklenmiş ürün yok.</td></tr>`;
+          return;
+        }
+
+        for (const p of products) {
+          const tr = document.createElement("tr");
+          const date = new Date(p.created_at).toLocaleDateString('tr-TR', { day: '2-digit', month: 'short', year: 'numeric' });
+          
+          tr.innerHTML = `
+            <td><span style="color: var(--text-muted)">#${p.id}</span></td>
+            <td style="font-weight: 500;">${p.name}</td>
+            <td>${p.current_price} ₺</td>
+            <td>${date}</td>
+            <td class="actions">
+              <button class="btn-secondary btn-sm" onclick="showHistory(this, ${p.id})">
+                <span class="spinner"></span> Geçmiş
+              </button>
+              <button class="btn-danger btn-sm" onclick="deleteProduct(this, ${p.id})">
+                <span class="spinner"></span> Sil
+              </button>
+            </td>
+          `;
+          tbody.appendChild(tr);
+        }
+      } catch (error) {
+        tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: var(--danger-color);">Bağlantı hatası: Lütfen API adresini kontrol edin.</td></tr>`;
+      }
+    }
+
+    async function showHistory(btnElement, productId) {
+      setLoading(btnElement, true);
+      const container = document.getElementById("history-container");
+      
+      try {
+        const res = await fetch(`${API}/products/${productId}/price-history`);
+        if (!res.ok) throw new Error('Geçmiş alınamadı');
+        const data = await res.json();
+        
+        const rows = data.history.length > 0 
+          ? data.history.map(h => {
+              const date = new Date(h.recorded_at).toLocaleString('tr-TR');
+              return `<li><span class="price-tag">${h.price} ₺</span> <span style="color: var(--text-muted)">${date}</span></li>`
+            }).join("")
+          : '<li><span style="color: var(--text-muted)">Henüz fiyat geçmişi bulunmuyor.</span></li>';
+          
+        container.innerHTML = `
+          <div class="card fade-in" id="history">
+            <h3>Ürün #${productId} Fiyat Geçmişi</h3>
+            <p>📉 En düşük: <strong>${data.lowest_price || '-'} ₺</strong> &nbsp;|&nbsp; 📈 En yüksek: <strong>${data.highest_price || '-'} ₺</strong></p>
+            <ul class="history-list">${rows}</ul>
+            
+            <form onsubmit="return addPrice(event, ${productId})" style="border-top: 1px solid var(--border-color); padding-top: 16px; margin-top: 16px;">
+              <input type="number" step="0.01" id="new-price" placeholder="Yeni fiyat güncelle" required>
+              <button type="submit" class="btn-primary" id="btn-update-price">
+                <span class="spinner"></span> Fiyatı Güncelle
+              </button>
+            </form>
+          </div>
+        `;
+        container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      } catch (error) {
+        showToast('Geçmiş yüklenirken bir hata oluştu.', 'error');
+      } finally {
+        setLoading(btnElement, false);
+      }
+    }
+
+    async function addPrice(event, productId) {
+      event.preventDefault();
+      const btn = document.getElementById('btn-update-price');
+      setLoading(btn, true);
+      const price = document.getElementById("new-price").value;
+      
+      try {
+        const res = await fetch(`${API}/products/${productId}/price`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ price: parseFloat(price) }),
+        });
+        if (!res.ok) throw new Error('Fiyat güncellenemedi');
+        
+        showToast('Fiyat başarıyla güncellendi!');
+        await loadProducts();
+        
+        // Yeniden yüklenmiş ürünler üzerinden geçmiş butonunu taklit etmeden doğrudan fonksiyonu çağıralım
+        // Geçici bir buton oluşturup setLoading'e gönderebiliriz
+        const tempBtn = document.createElement('button');
+        await showHistory(tempBtn, productId); 
+        
+      } catch (error) {
+        showToast('Fiyat güncellenirken bir hata oluştu.', 'error');
+        setLoading(btn, false);
+      }
+      return false;
+    }
+
+    async function deleteProduct(btnElement, productId) {
+      if(confirm('Bu ürünü silmek istediğinize emin misiniz?')) {
+        setLoading(btnElement, true);
+        try {
+          const res = await fetch(`${API}/products/${productId}`, { method: "DELETE" });
+          if (!res.ok) throw new Error('Silme işlemi başarısız');
+          
+          document.getElementById("history-container").innerHTML = "";
+          showToast('Ürün başarıyla silindi.');
+          await loadProducts();
+        } catch (error) {
+          showToast('Ürün silinirken bir hata oluştu.', 'error');
+          setLoading(btnElement, false);
+        }
+      }
+    }
+
+    document.getElementById("add-product-form").addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const btn = document.getElementById('btn-add-product');
+      setLoading(btn, true);
+      
+      const name = document.getElementById("name").value;
+      const current_price = parseFloat(document.getElementById("current_price").value);
+      
+      try {
+        const res = await fetch(`${API}/products`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ name, current_price }),
+        });
+        
+        if (!res.ok) throw new Error('Ürün eklenemedi');
+        
+        showToast('Ürün başarıyla eklendi!');
+        event.target.reset();
+        await loadProducts();
+      } catch (error) {
+        showToast('Ürün eklenirken bir hata oluştu.', 'error');
+      } finally {
+        setLoading(btn, false);
+      }
+    });
+
+    // Başlangıçta ürünleri yükle
+    loadProducts();
+  </script>
+</body>
+</html>

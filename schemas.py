@@ -1,12 +1,19 @@
 from datetime import datetime
 from typing import List
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field, field_validator
 
 
 class ProductCreate(BaseModel):
-    name: str
-    current_price: float
+    name: str = Field(min_length=1)
+    current_price: float = Field(gt=0)
+
+    @field_validator("name")
+    @classmethod
+    def name_must_not_be_blank(cls, v: str) -> str:
+        if not v.strip():
+            raise ValueError("name cannot be blank")
+        return v.strip()
 
 
 class ProductOut(BaseModel):
@@ -20,7 +27,7 @@ class ProductOut(BaseModel):
 
 
 class PriceCreate(BaseModel):
-    price: float
+    price: float = Field(gt=0)
 
 
 class PriceHistoryOut(BaseModel):

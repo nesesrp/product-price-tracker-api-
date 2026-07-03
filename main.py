@@ -1,6 +1,7 @@
 from typing import List
 
 from fastapi import Depends, FastAPI, HTTPException
+from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
 
 import models
@@ -10,6 +11,8 @@ from database import Base, engine, get_db
 Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="Product Price Tracker API")
+
+app.mount("/ui", StaticFiles(directory="static", html=True), name="ui")
 
 
 @app.get("/")
