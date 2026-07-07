@@ -236,6 +236,7 @@
   </div>
 
   <div class="card">
+    <p class="auth-hint" id="add-product-hint" style="display: none;">Ürün eklemek için önce giriş yapmalısın ya da kayıt olmalısın.</p>
     <form id="add-product-form">
       <input type="text" id="name" placeholder="Ürün adı (Örn: Kulaklık)" required>
       <input type="number" id="current_price" placeholder="Fiyat (₺)" step="0.01" required>
@@ -300,6 +301,9 @@
       if (loggedIn) {
         document.getElementById('auth-email-label').textContent = localStorage.getItem('email') || '';
       }
+
+      document.getElementById('add-product-hint').style.display = loggedIn ? 'none' : 'block';
+      document.getElementById('btn-add-product').disabled = !loggedIn;
     }
 
     // Toast Bildirim Fonksiyonu
@@ -545,7 +549,7 @@
         event.target.reset();
         await loadProducts();
       } catch (error) {
-        showToast('Ürün eklenirken bir hata oluştu.', 'error');
+        showToast(error.message || 'Ürün eklenirken bir hata oluştu.', 'error');
       } finally {
         setLoading(btn, false);
       }
