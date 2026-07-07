@@ -77,6 +77,30 @@ def get_product(product_id: int, db: Session = Depends(get_db)):
     return product
 
 
+@app.put("/products/{product_id}", response_model=schemas.ProductOut)
+def update_product(
+    product_id: int,
+    product_update: schemas.ProductUpdate,
+    db: Session = Depends(get_db),
+    current_user: models.User = Depends(auth.get_current_user),
+):
+    product = db.query(models.Product).filter(models.Product.id == product_id).first()
+    if product is None:
+        raise HTTPException(status_code=404, detail="Product not found")
+
+    if product_update.name is not None:
+        product.name = product_update.name
+
+    if product_update.current_price is not None and product_update.current_price != product.current_price:
+        product.current_price = product_update.current_price
+        db.add(models.PriceHistory(product_id=product_id, price=product_update.current_price))
+
+    db.commit()
+    db.refresh(product)
+
+    return product
+
+
 @app.post("/products/{product_id}/price", response_model=schemas.PriceHistoryOut)
 def add_price(
     product_id: int,

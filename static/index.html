@@ -331,13 +331,16 @@
       }
     }
 
+    let currentProducts = [];
+
     async function loadProducts() {
       const tbody = document.getElementById("product-list");
       try {
         const res = await fetch(`${API}/products`);
         if (!res.ok) throw new Error('Ürünler yüklenemedi');
         const products = await res.json();
-        
+        currentProducts = products;
+
         tbody.innerHTML = "";
         
         if (products.length === 0) {
@@ -357,6 +360,9 @@
             <td class="actions">
               <button class="btn-secondary btn-sm" onclick="showHistory(this, ${p.id})">
                 <span class="spinner"></span> Geçmiş
+              </button>
+              <button class="btn-secondary btn-sm" onclick="showEditForm(this, ${p.id})">
+                <span class="spinner"></span> Düzenle
               </button>
               <button class="btn-danger btn-sm" onclick="deleteProduct(this, ${p.id})">
                 <span class="spinner"></span> Sil
@@ -405,6 +411,64 @@
         showToast('Geçmiş yüklenirken bir hata oluştu.', 'error');
       } finally {
         setLoading(btnElement, false);
+      }
+    }
+
+    function showEditForm(btnElement, productId) {
+      const product = currentProducts.find(p => p.id === productId);
+      if (!product) return;
+
+      const container = document.getElementById("history-container");
+      container.innerHTML = `
+        <div class="card fade-in" id="edit-panel">
+          <h3>Ürün #${productId} Düzenle</h3>
+          <form id="edit-product-form">
+            <input type="text" id="edit-name" required>
+            <input type="number" id="edit-price" step="0.01" required>
+            <button type="submit" class="btn-primary" id="btn-save-edit">
+              <span class="spinner"></span> Kaydet
+            </button>
+            <button type="button" class="btn-secondary" id="btn-cancel-edit">İptal</button>
+          </form>
+        </div>
+      `;
+
+      document.getElementById("edit-name").value = product.name;
+      document.getElementById("edit-price").value = product.current_price;
+      document.getElementById("btn-cancel-edit").addEventListener("click", () => {
+        container.innerHTML = "";
+      });
+      document.getElementById("edit-product-form").addEventListener("submit", (event) => {
+        saveProductEdit(event, productId);
+      });
+
+      container.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    async function saveProductEdit(event, productId) {
+      event.preventDefault();
+      const btn = document.getElementById('btn-save-edit');
+      setLoading(btn, true);
+
+      const name = document.getElementById("edit-name").value;
+      const current_price = parseFloat(document.getElementById("edit-price").value);
+
+      try {
+        const res = await fetch(`${API}/products/${productId}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json", ...authHeaders() },
+          body: JSON.stringify({ name, current_price }),
+        });
+        if (res.status === 401) throw new Error('Önce giriş yapmalısın.');
+        if (!res.ok) throw new Error('Ürün güncellenemedi');
+
+        showToast('Ürün başarıyla güncellendi!');
+        document.getElementById("history-container").innerHTML = "";
+        await loadProducts();
+      } catch (error) {
+        showToast(error.message || 'Ürün güncellenirken bir hata oluştu.', 'error');
+      } finally {
+        setLoading(btn, false);
       }
     }
 

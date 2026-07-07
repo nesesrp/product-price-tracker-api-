@@ -76,6 +76,7 @@ development-only value.
 | POST | `/products` | Create a product | Yes |
 | GET | `/products` | List products | No |
 | GET | `/products/{id}` | Get a product | No |
+| PUT | `/products/{id}` | Update a product's name and/or price | Yes |
 | POST | `/products/{id}/price` | Record a new price | Yes |
 | GET | `/products/{id}/price-history` | Get price history | No |
 | DELETE | `/products/{id}` | Delete a product | Yes |
